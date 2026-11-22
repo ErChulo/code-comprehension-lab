@@ -99,7 +99,7 @@ story += [P("Code Comprehension Lab", title),
 story += [P("1. The goal and the method", h1),
  P("You want to feel safe with code that an LLM wrote. You feel safe when you can explain the code to other people. "
    "You can explain the code when you hold a correct mental model of it. This guide gives you a method to build that model."),
- P("The method has five phases. Each phase gives you one kind of picture or test. You do the phases in order for each project."),
+ P("The method has five phases and one last step. Each phase gives you one kind of picture or test. You do the phases in order for each project. The last step (Phase 6) builds a slide deck from your results. Do it only after you pass the checks in Phase 5."),
  ]
 story += table([
  ["Phase", "Question you answer", "What you produce"],
@@ -108,6 +108,7 @@ story += table([
  ["3. Trace behavior", "What happens, in what order, when the code runs?", "Sequence, activity, state and flow diagrams. Object diagrams."],
  ["4. Animate mechanics", "How does one algorithm change data, step by step?", "Frame tables. Optional animation."],
  ["5. Verify", "Is my model correct? Can I explain it?", "Commutative-diagram tests. Quiz. Explain-back."],
+ ["6. Present", "Can I show my model to an audience?", "One slide deck (one HTML file), built with generator.html. Section 11."],
 ], [W*0.20, W*0.40, W*0.40])
 story += callout("NOTE", "The rule for the whole method: a picture is trusted only when each box and arrow points to a file and line number. "
   "A picture that has no such evidence is a guess. Mark a guess as <b>inference</b>.")
@@ -167,7 +168,8 @@ code-lab/
     <name>/              the cloned repository (read only)
       .rederive/         map.md and log.md (written by rederive)
     diagrams/            01-class.mmd, 02-sequence.mmd, ...
-    notes/               frames.md, oracle.md, quiz.md, explain.md
+    notes/               frames-D2.md, oracle-1.md, intuition.md, quiz.md, explain.md
+    deck/                the finished deck (Phase 6)
   Project2/ ...""")]
 story += S("4.5", "Add a viewer for Mermaid. The offline route is the Mermaid CLI. It makes PNG or SVG files.", "npx -p @mermaid-js/mermaid-cli mmdc -i 01-class.mmd -o 01-class.png")
 story += [P("Another route: a VS Code extension that previews Mermaid. Do not use an online editor for private code.", step)]
@@ -295,8 +297,68 @@ story += table([
 story += [P("The security test: if you can do steps 1 to 6 for every decision, with no notes, the code is yours. "
   "If a step fails, return to the phase that makes that picture.")]
 
+story += [PageBreak(), P("11. Phase 6. Present: build the deck", h1),
+ P("Goal: show your model to an audience, with the same pictures that you checked. The tool is one HTML page named " + c("generator.html") + ". "
+   "It is in the lab repository: github.com/ErChulo/code-comprehension-lab. It opens from disk (" + c("file://") + "). It needs no Node, no Python, no server and no network."),
+ ]
+story += callout("WARNING", "Build the deck only after you pass the explain-back test in Section 10. " + c(".rederive/map.md") + " holds the answers. "
+  "A deck built too early turns rederive into a reading exercise. Also, a deck shows what Codex wrote. It does not prove that the code is right.")
+story += [P("11.1 Which file becomes which slide", h2)]
+story += table([
+ ["File", "Made in phase", "Slides it makes"],
+ [c(".rederive/map.md"), "1", "Root problem. For each decision: problem, constraints (one at a time, with the design each one breaks), options, the decision, and where it lives in the code."],
+ [c(".rederive/log.md"), "1", "Speaker notes only. It never shows on a slide."],
+ [c("diagrams/*.mmd"), "2, 3", "One slide for each diagram. Drawn in the browser."],
+ [c("notes/frames*.md"), "4", "A table that shows one row for each press of the space bar."],
+ [c("notes/oracle*.md"), "5", "A \"checking the model\" table."],
+ [c("notes/intuition.md"), "any", "An \"in plain words\" slide for each decision. Optional."],
+], [W*0.28, W*0.14, W*0.58])
+story += [P("11.2 Naming rules", h2)]
+story += table([
+ ["Rule", "Example"],
+ ["Attach a diagram to a decision with a first line in the file, or put the decision number in the file name.", c("%% decision: D2") + " or " + c("D2-flow.mmd")],
+ ["Give the slide a title and a caption.", c("%% title: Carry-forward flow") + "<br/>" + c("%% caption: Step order is INFERENCE.")],
+ ["Draw a flowchart or state diagram one node at a time.", c("%% build: true")],
+ ["Attach a frame or oracle table to a decision with the number in the file name. A file without a number goes to the general section.", c("frames-D2.md") + ", " + c("oracle-1.md")],
+ ["Start each section of intuition.md with the decision number.", c("## D2")],
+ ["Start each frame or oracle table with a heading and a markdown table.", c("## My title") + " then " + c("| Step | Input |")],
+], [W*0.62, W*0.38])
+story += [KeepTogether([P("11.3 Prepare the files with Codex", h2),
+ P("Run this in the project folder after Phase 5. It adds the tags and drafts the plain-words text. Then you edit the text until it sounds like you."),
+ codeblock("""
+Work only in diagrams/ and notes/. Do not edit ./<name>.
+1. At the top of every .mmd file in diagrams/ add these lines. Do not change
+   the rest of the file.
+   %% decision: D<n>      (the decision it explains; leave out for whole-system diagrams)
+   %% title: <at most 8 words>
+   %% caption: <one sentence; write INFERENCE if any part is a guess>
+   %% build: true         (only for flowchart and state diagrams)
+2. Write notes/intuition.md. For each decision in .rederive/map.md add a
+   section "## D<n>" with two short paragraphs in plain words and one
+   everyday example. Use only facts from the code and the map.
+   Mark any guess as INFERENCE.""")])]
+story += [P("11.4 Build the deck", h2)]
+story += S("1", "Open " + c("generator.html") + " in your browser from disk. Do not run a server.")
+story += S("2", "Click <b>Choose project folder</b>. Select your " + c("ProjectN") + " folder. The page lists what it found: map.md, log.md, diagrams, tables, intuition.")
+story += [P("If the folder button finds nothing, click <b>Or choose files</b> and select the files by hand. To see the page work first, click <b>Use the built-in sample</b>.", step)]
+story += S("3", "Type a title. Click <b>Build deck</b>. The page draws each diagram. A diagram that fails is named in the log.")
+story += S("4", "Click <b>Download deck</b>. The result is one HTML file. Open it from disk. It needs no network.")
+story += [P("11.5 Use the deck in the talk", h2)]
+story += table([
+ ["Key", "Action"],
+ ["Space or arrow", "Next step: the next constraint, option, table row or diagram node."],
+ ["S", "Open speaker notes in a second window. Your rederive log shows there. Do not show that window to the audience."],
+ ["O", "Overview of all slides."],
+ ["Alt + click", "Zoom into a diagram."],
+ ["Add ?print-pdf to the address, then print", "A PDF handout."],
+], [W*0.34, W*0.66])
+story += callout("NOTE", "Before you present, open the file or line for three \"where it lives in the code\" rows on the slides. Read each one. "
+  "Then do the explain-back routine (Section 10) with the deck on the screen. If you need the speaker notes to answer, go back to Phase 1.")
+story += callout("NOTE", "Limits. A diagram builds one node at a time only for flowchart and state diagrams. Class and sequence diagrams show whole. "
+  "The deck is HTML. A PowerPoint file is not made. This guide did not test the page in your office browser.")
+
 # ---------------- Troubleshooting ----------------
-story += [P("11. Troubleshooting", h1)]
+story += [P("12. Troubleshooting", h1)]
 story += table([
  ["Problem", "Cause", "Action"],
  ["Codex does not find the skill", "Wrong folder, or " + c("-g") + " used", "Start Codex in the root. Check " + c(".agents/skills/rederive") + ". Use " + c("/skills") + "."],
@@ -305,6 +367,9 @@ story += table([
  ["Evidence line is wrong", "Codex guessed", "Mark INFERENCE. Remove the box, or find the true line."],
  ["Diagram is too big", "Too many boxes", "Limit to 8 boxes. Make one diagram per question."],
  ["Tool will not install", "Not for Codex, or a wrong name", "Use the Codex + Mermaid prompts in this guide."],
+ ["Diagram is in the wrong place in the deck", "No decision tag in the file", "Add the line %% decision: D2 at the top of the .mmd file, or put D2 in the file name."],
+ ["A diagram shows as text in the deck", "Mermaid syntax error", "The page lists the file that failed. Fix the syntax. Build again."],
+ ["Choose project folder finds no map.md", "Browser or folder problem", "Use Or choose files. Select map.md, log.md and the files in diagrams and notes."],
 ], [W*0.28, W*0.26, W*0.46])
 
 # ---------------- Appendices ----------------
@@ -335,7 +400,8 @@ story += B([
  "Apache Hamilton: github.com/apache/hamilton (README: install command, Python 3.11+, Graphviz).",
  "pyreverse: Pylint documentation (additional tools).",
  "Mermaid CLI (mmdc): github.com/mermaid-js/mermaid-cli.",
- "pbgc-r5-generator: github.com/ErChulo/pbgc-r5-generator (types.ts, review.ts, generate.ts read)."])
+ "pbgc-r5-generator: github.com/ErChulo/pbgc-r5-generator (types.ts, review.ts, generate.ts read).",
+ "Deck builder (generator.html): github.com/ErChulo/code-comprehension-lab. Uses reveal.js and Mermaid, both inside the file."])
 
 def footer(canvas, doc):
     canvas.saveState()
