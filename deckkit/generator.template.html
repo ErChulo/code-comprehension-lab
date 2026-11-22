@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Deck Builder</title>
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--ink:#1a2230;--navy:#1d3f72;--accent:#1d4f91;--soft:#e4edf8;--line:#c5ccd8;--grey:#566074;--ok:#1e7b3a;--warn:#9a5b00;--bad:#a4262c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",Inter,Helvetica,Arial,sans-serif}
+main{max-width:920px;margin:0 auto;padding:24px 16px 60px}
+h1{color:var(--navy);margin:0 0 4px}h2{color:var(--navy);font-size:17px;margin:0 0 8px}
+.sub{color:var(--grey);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:0 0 14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label.btn,button{background:var(--accent);color:#fff;border:0;border-radius:7px;padding:9px 14px;font:inherit;cursor:pointer}
+button.alt,label.btn.alt{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=file]{display:none}input[type=text]{flex:1;min-width:220px;padding:8px;border:1px solid var(--line);border-radius:6px;font:inherit}
+ul.found{list-style:none;padding:0;margin:10px 0 0}ul.found li{padding:2px 0}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}code{background:#eef1f5;padding:1px 5px;border-radius:3px}
+.note{background:var(--soft);border-left:4px solid var(--accent);padding:8px 12px;border-radius:4px;font-size:14px}
+iframe{width:100%;height:520px;border:1px solid var(--line);border-radius:8px;background:#fff}
+#log{white-space:pre-wrap;font:13px/1.4 Consolas,Menlo,monospace;color:var(--grey);margin-top:8px}
+</style></head>
+<body><main>
+<h1>Deck Builder</h1>
+<p class="sub">Turns a rederive decision map and your diagrams into one reveal.js deck. Runs here in the browser. No server, no network, no install.</p>
+
+<div class="card"><h2>1. Give it your project</h2>
+<div class="row">
+<label class="btn">Choose project folder<input id="dir" type="file" webkitdirectory directory multiple></label>
+<label class="btn alt">Or choose files<input id="files" type="file" multiple accept=".md,.mmd,.txt"></label>
+<button class="alt" id="sample">Use the built-in sample</button>
+</div>
+<p class="hint" style="color:var(--grey);font-size:13px;margin:8px 0 0">The folder is your <code>ProjectN</code> folder: it holds <code>&lt;repo&gt;/.rederive/map.md</code>, <code>diagrams/*.mmd</code> and <code>notes/*.md</code>. Files stay in your browser.</p>
+<ul class="found" id="found"></ul></div>
+
+<div class="card"><h2>2. Build</h2>
+<div class="row"><input id="title" type="text" placeholder="Deck title (optional)">
+<button id="build" disabled>Build deck</button></div>
+<div id="log"></div></div>
+
+<div class="card" id="outcard" hidden><h2>3. Your deck</h2>
+<div class="row"><button id="dl">Download deck (.html)</button><button class="alt" id="tab">Open in new tab</button><button class="alt" id="pv">Show preview here</button></div>
+<p class="note" style="margin:10px 0">The downloaded file is one self-contained page. Open it from disk. Space = next step. S = speaker notes. O = overview. Add <code>?print-pdf</code> to the address to print a handout.</p>
+<div id="pvbox"></div></div>
+</main>
+
+<script>/*MERMAID*/</script>
+<script>/*CORE*/</script>
+<script>
+const ASSETS = /*ASSETS*/;
+const SAMPLE = /*SAMPLE*/;
+(function(){
+const $=id=>document.getElementById(id);
+let project=null, deckHtml='', deckName='deck.html';
+const logEl=$('log'); const log=m=>{logEl.textContent+=m+'\n'};
+const readText=f=>f.text();
+function classify(list){
+  // list: [{path, text}]
+  const p={map:null,log:null,diagrams:[],tables:[],intuition:'',repo:''};
+  for(const f of list){
+    const path=f.path.replace(/\\/g,'/'), name=path.split('/').pop();
+    if(/(^|\/)\.rederive\/map\.md$/.test(path)||(name==='map.md'&&!p.map)){p.map=f.text;const m=path.match(/([^/]+)\/\.rederive\/map\.md$/);p.repo=m?m[1]:p.repo;}
+    else if(/(^|\/)\.rederive\/log\.md$/.test(path)||(name==='log.md'&&!p.log)){p.log=f.text;}
+    else if(/\.mmd$/.test(name)){p.diagrams.push({file:name,text:f.text});}
+    else if(name==='intuition.md'){p.intuition=f.text;}
+    else if(/^(frames|oracle).*\.md$/.test(name)){p.tables.push({file:name,text:f.text});}
+  }
+  p.diagrams.sort((a,b)=>a.file<b.file?-1:1);
+  return p;
+}
+function show(p){
+  const li=(cls,t)=>'<li class="'+cls+'">'+t+'</li>';
+  $('found').innerHTML=[
+    p.map?li('ok','&#10003; map.md found'+(p.repo?' (repo '+p.repo+')':'')):li('bad','&#10007; map.md not found. Pick the project folder, or add <code>map.md</code> with the files option.'),
+    p.log?li('ok','&#10003; log.md found (goes into speaker notes only)'):li('warn','&bull; log.md not found (optional)'),
+    li(p.diagrams.length?'ok':'warn',(p.diagrams.length?'&#10003; ':'&bull; ')+p.diagrams.length+' Mermaid diagram(s)'),
+    li(p.tables.length?'ok':'warn',(p.tables.length?'&#10003; ':'&bull; ')+p.tables.length+' frame/oracle table file(s)'),
+    li(p.intuition?'ok':'warn',(p.intuition?'&#10003; ':'&bull; ')+'intuition.md '+(p.intuition?'found':'not found (optional)'))
+  ].join('');
+  $('build').disabled=!p.map;
+}
+async function load(fileList){
+  const arr=[...fileList]; const items=[];
+  for(const f of arr){ if(/\.(md|mmd|txt)$/i.test(f.name)) items.push({path:f.webkitRelativePath||f.name,text:await readText(f)}); }
+  project=classify(items); show(project); $('outcard').hidden=true;
+}
+$('dir').addEventListener('change',e=>load(e.target.files));
+$('files').addEventListener('change',e=>load(e.target.files));
+$('sample').addEventListener('click',()=>{project=classify(SAMPLE);$('title').value='SAMPLE: Defending pbgc-r5-generator';show(project);$('outcard').hidden=true;});
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length)load(e.dataTransfer.files);});
+
+async function renderAll(diags){
+  mermaid.initialize({startOnLoad:false,securityLevel:'strict',theme:'default'});
+  const out=[];let i=0;
+  for(const d of diags){
+    const c=DeckCore.parseDiagramSource(d.file,d.text); let svg=null;
+    try{ const r=await mermaid.render('dg'+(i++),c.clean); svg=r.svg; log('  drew '+d.file); }
+    catch(err){ log('  FAILED '+d.file+': '+String(err.message||err).split('\n')[0]); document.querySelectorAll('[id^=ddg],[id^=dg]').forEach(n=>{if(n.tagName!=='svg'&&n.parentNode===document.body)n.remove();}); }
+    out.push({file:d.file,meta:c.meta,src:c.clean,svg});
+  }
+  return out;
+}
+$('build').addEventListener('click',async()=>{
+  logEl.textContent=''; $('build').disabled=true;
+  try{
+    log('Drawing diagrams...');
+    const diagrams=await renderAll(project.diagrams);
+    log('Building deck...');
+    deckHtml=DeckCore.build({map:project.map,log:project.log||'',repoName:project.repo||'repo',title:$('title').value.trim()||undefined,diagrams,tables:project.tables,intuition:project.intuition,assets:ASSETS});
+    deckName=(project.repo||'deck')+'-deck.html';
+    log('Done: '+(deckHtml.length/1024).toFixed(0)+' KB. Download it below.');
+    $('outcard').hidden=false; $('pvbox').innerHTML='';
+  }catch(err){ log('ERROR: '+(err.message||err)); }
+  $('build').disabled=false;
+});
+$('dl').addEventListener('click',()=>{
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([deckHtml],{type:'text/html'})); a.download=deckName;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
+$('tab').addEventListener('click',()=>{ const u=URL.createObjectURL(new Blob([deckHtml],{type:'text/html'})); const w=window.open(u,'_blank'); if(!w) log('The browser blocked the new tab. Use Download or the preview.'); });
+$('pv').addEventListener('click',()=>{ const f=document.createElement('iframe'); f.setAttribute('allow','fullscreen'); f.srcdoc=deckHtml; $('pvbox').innerHTML=''; $('pvbox').appendChild(f); });
+})();
+</script>
+</body></html>

@@ -1,0 +1,507 @@
+<title>R5 Generator Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column, wide figures scroll inside their own frame.
+   Palette: ink navy as accent, amber for warnings, cool grey neutrals. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1a2230; --muted: #566074; --line: #c5ccd8;
+  --accent: #1d4f91; --accent-soft: #e4edf8; --warn: #9a5b00; --warn-soft: #fbf0dc;
+  --code-bg: #eceff4;
+  --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12171f; --surface: #1a212c; --fg: #e6eaf1; --muted: #9aa5b8; --line: #3a4557;
+  --accent: #7fb0ee; --accent-soft: #1d2d45; --warn: #f0b45a; --warn-soft: #3a2d14;
+  --code-bg: #232b38; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #12171f; --surface: #1a212c; --fg: #e6eaf1; --muted: #9aa5b8; --line: #3a4557;
+  --accent: #7fb0ee; --accent-soft: #1d2d45; --warn: #f0b45a; --warn-soft: #3a2d14;
+  --code-bg: #232b38; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px; }
+main { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+header h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 65ch; }
+.meta { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+h2 { font-size: 1.35rem; margin: 0 0 12px; text-wrap: balance; }
+h3 { font-size: 1.05rem; margin: 20px 0 6px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 12px; }
+ul, ol { margin: 0 0 12px; padding-left: 1.3em; }
+li { margin-bottom: 4px; }
+code { font-family: var(--mono); font-size: .88em; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+section { display: block; }
+.note, .warning, .caution { border: 1px solid var(--line); border-left-width: 4px; background: var(--surface); padding: 10px 14px; margin: 0 0 14px; max-width: 72ch; }
+.note { border-left-color: var(--accent); }
+.warning, .caution { border-left-color: var(--warn); background: var(--warn-soft); }
+.note b, .warning b, .caution b { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-right: 6px; }
+figure { margin: 8px 0 20px; }
+.frame { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 12px; }
+.frame svg { display: block; min-width: 640px; width: 100%; height: auto; }
+figcaption { font-size: 13.5px; color: var(--muted); margin-top: 8px; max-width: 72ch; }
+figcaption b { color: var(--fg); }
+.tbl { overflow-x: auto; margin: 0 0 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; background: var(--surface); }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px; border: 1px solid var(--line); }
+th { background: var(--accent-soft); font-weight: 600; }
+td code, th code { white-space: nowrap; }
+td.mn { min-width: 150px; }
+.steps li { max-width: 72ch; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 16px; font-size: 14px; }
+nav.toc a { color: var(--accent); text-underline-offset: 3px; }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* SVG classes */
+.bx { fill: var(--surface); stroke: var(--line); stroke-width: 1.3; }
+.bx.hl { fill: var(--accent-soft); stroke: var(--accent); }
+.bx.wn { fill: var(--warn-soft); stroke: var(--warn); }
+.bd { fill: var(--accent-soft); stroke: var(--line); stroke-width: 1.3; }
+.th { fill: var(--fg); font: 600 13px var(--sans); }
+.tx { fill: var(--fg); font: 12px var(--sans); }
+.tm { fill: var(--fg); font: 11px var(--mono); }
+.ts { fill: var(--muted); font: 11.5px var(--sans); }
+.ln { stroke: var(--fg); stroke-width: 1.3; fill: none; }
+.ln.d { stroke-dasharray: 5 4; }
+.ln.fine { stroke: var(--line); }
+.ah { fill: var(--fg); }
+.dia { fill: var(--surface); stroke: var(--fg); stroke-width: 1.2; }
+.dot { fill: var(--fg); }
+.mid { text-anchor: middle; }
+.end { text-anchor: end; }
+</style>
+
+<main>
+<header>
+  <h1>PBGC R5 Generator</h1>
+  <p>A guide to the repository, written in ASD-STE100 style. Sentences are short. Each term has one meaning. Figures show the data flow, the structure, and the behavior.</p>
+  <div class="meta">ErChulo/pbgc-r5-generator · commit 4da03b5 · version 0.11.3 (README status)</div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#purpose">Purpose</a><a href="#terms">Terms</a><a href="#rules">Rules</a><a href="#flow">Workflow</a><a href="#build">Build</a><a href="#model">Data model</a><a href="#scrape">Scrape</a><a href="#reconcile">Reconcile</a><a href="#review">Review and gate</a><a href="#rates">Rates</a><a href="#map">Repository map</a><a href="#checks">Checks</a><a href="#limits">Limits</a><a href="#reading">Reading order</a>
+  </nav>
+</header>
+
+<section id="purpose">
+  <h2>1. Purpose</h2>
+  <p>The repository makes one product: the R5 Plan Summary. The R5 is a Word document. It lists the provisions of a terminated pension plan. Each provision has a value and a citation.</p>
+  <p>The office computer has no server, no Node, and no Python. The product is therefore one HTML file. The file is <code>r5-generator.html</code>. A user opens it with a double-click. It works offline.</p>
+  <div class="warning"><b>Warning</b>Do not give <code>apps/r5-gui</code> to an office user. It is a Vite and React reference only. It does not meet the office constraint.</div>
+</section>
+
+<section id="terms">
+  <h2>2. Terms</h2>
+  <p>The repository uses these terms in the same way everywhere.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>R5, Plan Summary</td><td>The Word document that the app makes.</td></tr>
+      <tr><td>Shell</td><td>The approved blank Plan Summary .docx (copy B, version as of 03/30/2023). The app fills it. The app does not rebuild it.</td></tr>
+      <tr><td>Item, field</td><td>One of the 61 questions in the R5. Example: <code>accrualFactor</code>.</td></tr>
+      <tr><td>Document column</td><td>One plan document, labeled D1, D2, D3. D1 is the oldest.</td></tr>
+      <tr><td>Pair</td><td>One field in one document column. Its review key is <code>field:docIndex</code>.</td></tr>
+      <tr><td>Status</td><td><code>present</code>, <code>notApplicable</code>, <code>missing</code>, or <code>ambiguous</code>.</td></tr>
+      <tr><td>Lifecycle</td><td>How a value relates to earlier documents: <code>unchanged</code>, <code>amended</code>, <code>superseded</code>, <code>missing</code>, or <code>notApplicable</code>.</td></tr>
+      <tr><td>Citation code</td><td>A short source reference. Example: <code>D1 &sect;2.1 p3</code>.</td></tr>
+      <tr><td>Draft, Final</td><td>A draft is a working document. A final is the case-file document. It needs the final gate to pass.</td></tr>
+      <tr><td>STE 100 value</td><td>The smallest string that keeps the meaning. Example: <code>Age 21; 1 yr service (1,000 hrs)</code>.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="rules">
+  <h2>3. Rules that shape the code</h2>
+  <ol>
+    <li>The office app is one HTML file. It has no build step, no <code>fetch()</code>, no CDN, and no ES modules.</li>
+    <li>The generator is deterministic. No language model runs in the calculation or generation path.</li>
+    <li>A human approves each item. Review is a gate.</li>
+    <li>The shell has three document columns. Documents 4 to 6 go in a repeated block below. Then 7 to 9, and so on.</li>
+    <li>The header rates come from the BCV add-in functions, with provenance. The app never types a rate.</li>
+    <li>A missing value is safer than a wrong value. The scraper never guesses.</li>
+    <li>Development data is synthetic. The repository holds no real case data.</li>
+  </ol>
+  <div class="note"><b>Note</b>The file carries a Content-Security-Policy with <code>connect-src 'none'</code>. The page cannot open a network connection.</div>
+</section>
+
+<section id="flow">
+  <h2>4. Workflow</h2>
+  <p>The user moves through five steps. The app locks a step until the step before it is complete.</p>
+  <figure>
+    <div class="frame"><svg viewBox="0 0 940 250" role="img" aria-label="Five-step workflow: Upload, Scrape, Review, Generate, Download, with a gate between Review and Generate.">
+      <defs><marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+
+      <rect class="bx" x="10" y="60" width="150" height="64" rx="4"/>
+      <text class="th" x="24" y="84">1 Upload</text><text class="ts" x="24" y="104">Module 0 classifies</text>
+      <text class="ts" x="10" y="146">.docx .pdf .txt .md</text><text class="ts" x="10" y="162">or pasted text or JSON</text><text class="ts" x="10" y="178">type and dates from name</text>
+
+      <rect class="bx" x="196" y="60" width="150" height="64" rx="4"/>
+      <text class="th" x="210" y="84">2 Scrape</text><text class="ts" x="210" y="104">extract, then reconcile</text>
+      <text class="ts" x="196" y="146">read text, no OCR</text><text class="ts" x="196" y="162">find 61 items per document</text><text class="ts" x="196" y="178">carry values forward</text>
+
+      <rect class="bx hl" x="382" y="60" width="150" height="64" rx="4"/>
+      <text class="th" x="396" y="84">3 Review</text><text class="ts" x="396" y="104">human approval</text>
+      <text class="ts" x="382" y="146">approve, edit, reject</text><text class="ts" x="382" y="162">confirm "read in full"</text><text class="ts" x="382" y="178">fix citations</text>
+
+      <rect class="bx" x="568" y="60" width="150" height="64" rx="4"/>
+      <text class="th" x="582" y="84">4 Generate</text><text class="ts" x="582" y="104">templateFill.js</text>
+      <text class="ts" x="568" y="146">fill the official shell</text><text class="ts" x="568" y="162">3 columns per block</text><text class="ts" x="568" y="178">draft or final</text>
+
+      <rect class="bx" x="754" y="60" width="150" height="64" rx="4"/>
+      <text class="th" x="768" y="84">5 Download</text><text class="ts" x="768" y="104">files out</text>
+      <text class="ts" x="754" y="146">&lt;case&gt;R5.docx</text><text class="ts" x="754" y="162">audit log</text><text class="ts" x="754" y="178">&lt;case&gt;R5.contribution.json</text>
+
+      <line class="ln" x1="160" y1="92" x2="194" y2="92" marker-end="url(#f1)"/>
+      <line class="ln" x1="346" y1="92" x2="380" y2="92" marker-end="url(#f1)"/>
+      <line class="ln" x1="532" y1="92" x2="566" y2="92" marker-end="url(#f1)"/>
+      <line class="ln" x1="718" y1="92" x2="752" y2="92" marker-end="url(#f1)"/>
+      <text class="ts mid" x="549" y="82">gate</text>
+
+      <rect class="bx wn" x="10" y="204" width="894" height="30" rx="4" style="stroke-dasharray:5 4"/>
+      <text class="tx mid" x="457" y="224">No server. No language model in the calculation path. Opens from file://</text>
+    </svg></div>
+    <figcaption><b>Figure 1.</b> The five steps. The gate before Generate blocks until the header is complete and every item is reviewed.</figcaption>
+  </figure>
+  <h3>Draft and final</h3>
+  <p>The user can make a draft at any time after the header and review are done. The final gate never blocks a draft. A final needs a clean gate. Any edit reopens a final to draft.</p>
+</section>
+
+<section id="build">
+  <h2>5. How the single file is built</h2>
+  <p>The source lives in separate files. The script <code>scripts/build_single_file.py</code> copies them into the HTML. The HTML has one <code>&lt;script&gt;</code>. The script replaces named regions. It does not touch the app code.</p>
+  <figure>
+    <div class="frame"><svg viewBox="0 0 940 400" role="img" aria-label="Source modules, vendor files and prompt template flow through the build script into r5-generator.html. TypeScript twins test the same logic.">
+      <defs><marker id="f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+
+      <rect class="bx" x="10" y="20" width="300" height="130" rx="4"/>
+      <rect class="bd" x="10" y="20" width="300" height="28" rx="4"/>
+      <text class="th" x="22" y="39">module-1-r5/src/*.js</text>
+      <text class="tm" x="22" y="72">lexicon  scrape  extract</text>
+      <text class="tm" x="22" y="90">flexImport  missingPrompt</text>
+      <text class="tm" x="22" y="108">ratesCalc  templateFill</text>
+      <text class="tm" x="22" y="126">contribution  pipeline  ordering</text>
+
+      <rect class="bx" x="10" y="170" width="300" height="100" rx="4"/>
+      <rect class="bd" x="10" y="170" width="300" height="28" rx="4"/>
+      <text class="th" x="22" y="189">vendor/</text>
+      <text class="tm" x="22" y="218">compromise-14.14.4.js (MIT)</text>
+      <text class="tm" x="22" y="236">plan-summary-shell.docx.b64</text>
+      <text class="tm" x="22" y="254">pbgc-rates-r5-header-v1.1.2.xlsx.b64</text>
+
+      <rect class="bx" x="10" y="290" width="300" height="70" rx="4"/>
+      <rect class="bd" x="10" y="290" width="300" height="28" rx="4"/>
+      <text class="th" x="22" y="309">prompts/</text>
+      <text class="tm" x="22" y="340">r5-missing-items-prompt.md</text>
+
+      <rect class="bx hl" x="390" y="140" width="190" height="130" rx="4"/>
+      <rect class="bd" x="390" y="140" width="190" height="28" rx="4"/>
+      <text class="th" x="402" y="159">build_single_file.py</text>
+      <text class="tx" x="402" y="192">replaces 13 regions</text>
+      <text class="tx" x="402" y="212">checks SHA-256 of shell</text>
+      <text class="tx" x="402" y="232">and of rates workbook</text>
+      <text class="tx" x="402" y="252">stops on duplicate names</text>
+
+      <rect class="bx hl" x="660" y="140" width="270" height="130" rx="4"/>
+      <rect class="bd" x="660" y="140" width="270" height="28" rx="4"/>
+      <text class="th" x="672" y="159">r5-generator.html</text>
+      <text class="tx" x="672" y="192">one file, one script</text>
+      <text class="tx" x="672" y="212">app code: edited in place</text>
+      <text class="tx" x="672" y="232">CSP: connect-src none</text>
+      <text class="tx" x="672" y="252">opens from file://</text>
+
+      <polyline class="ln" points="310,85 350,85 350,185 388,185" marker-end="url(#f2)"/>
+      <polyline class="ln" points="310,220 350,220 350,225 388,225" marker-end="url(#f2)"/>
+      <polyline class="ln" points="310,325 350,325 350,250 388,250" marker-end="url(#f2)"/>
+      <line class="ln" x1="580" y1="205" x2="658" y2="205" marker-end="url(#f2)"/>
+      <text class="ts mid" x="619" y="196">inline</text>
+
+      <rect class="bx" x="390" y="310" width="540" height="76" rx="4" style="stroke-dasharray:5 4"/>
+      <text class="th" x="402" y="332">module-1-r5/src/*.ts and *.test.ts</text>
+      <text class="tx" x="402" y="352">types, review, generate, validate, columns: tested reference logic</text>
+      <text class="tx" x="402" y="370">scripts/verify_*.cjs run the HTML's own inlined code</text>
+      <line class="ln d" x1="795" y1="270" x2="795" y2="308" marker-end="url(#f2)"/>
+      <text class="ts" x="805" y="294">same logic, tested</text>
+    </svg></div>
+    <figcaption><b>Figure 2.</b> Build flow. Source modules, vendor files and the prompt template enter the script. The script writes one HTML file. The TypeScript files test the same logic.</figcaption>
+  </figure>
+  <div class="caution"><b>Caution</b>Put a new region after the line that holds <code>compromise.js</code>. A region placed before it drops the library from the build. The script docstring records this past defect.</div>
+</section>
+
+<section id="model">
+  <h2>6. Data model</h2>
+  <p>All data moves as one JSON object: <code>R5Json</code>. The schema is <code>schema/r5.schema.json</code>. The TypeScript types are in <code>types.ts</code>.</p>
+  <p>Each of the 61 fields holds a list of answers. The list has one answer per document column. Index 0 is D1.</p>
+  <figure>
+    <div class="frame"><svg viewBox="0 0 920 530" role="img" aria-label="UML class diagram. R5Json contains DocumentColumn list, CoverPage and a provisions map of ProvisionAnswer lists. ProvisionAnswer may hold NaBasis. DocumentColumn may hold DocumentDates. CoverPage holds up to three RateProvenanceEntry.">
+      <!-- R5Json -->
+      <rect class="bx hl" x="330" y="10" width="260" height="132" rx="3"/><rect class="bd" x="330" y="10" width="260" height="26" rx="3"/>
+      <text class="th mid" x="460" y="28">R5Json</text>
+      <text class="tm" x="340" y="52">documentStatus: draft | final</text>
+      <text class="tm" x="340" y="68">headerSources?: map</text>
+      <text class="tm" x="340" y="84">planMetadata: planName, caseNumber…</text>
+      <text class="tm" x="340" y="100">coverPage: dopt, rates…</text>
+      <text class="tm" x="340" y="116">documentColumns: DocumentColumn[]</text>
+      <text class="tm" x="340" y="132">provisions: map&lt;field, Answer[]&gt;</text>
+      <!-- DocumentColumn -->
+      <rect class="bx" x="10" y="190" width="280" height="140" rx="3"/><rect class="bd" x="10" y="190" width="280" height="26" rx="3"/>
+      <text class="th mid" x="150" y="208">DocumentColumn</text>
+      <text class="tm" x="20" y="232">documentName</text>
+      <text class="tm" x="20" y="248">documentType: 10-value list</text>
+      <text class="tm" x="20" y="264">effectiveDate, adoptionDate</text>
+      <text class="tm" x="20" y="280">readComplete?: bool</text>
+      <text class="tm" x="20" y="296">minorChange?, significantChange?</text>
+      <text class="tm" x="20" y="312">affectsSeparatedVested?</text>
+      <!-- CoverPage -->
+      <rect class="bx" x="330" y="190" width="260" height="120" rx="3"/><rect class="bd" x="330" y="190" width="260" height="26" rx="3"/>
+      <text class="th mid" x="460" y="208">CoverPage</text>
+      <text class="tm" x="340" y="232">dopt, dotr, nodDate, noitDate</text>
+      <text class="tm" x="340" y="248">bpd, dobf, facilityClosingDate</text>
+      <text class="tm" x="340" y="264">pbgcLumpSumSegments[]</text>
+      <text class="tm" x="340" y="280">pbgcAnnuitySchedule[]</text>
+      <text class="tm" x="340" y="296">rateProvenance?</text>
+      <!-- ProvisionAnswer -->
+      <rect class="bx hl" x="630" y="190" width="280" height="160" rx="3"/><rect class="bd" x="630" y="190" width="280" height="26" rx="3"/>
+      <text class="th mid" x="770" y="208">ProvisionAnswer</text>
+      <text class="tm" x="640" y="232">status: ProvisionStatus</text>
+      <text class="tm" x="640" y="248">value: string | number | null</text>
+      <text class="tm" x="640" y="264">citation: document, section, page</text>
+      <text class="tm" x="640" y="280">lifecycle: ProvisionLifecycle</text>
+      <text class="tm" x="640" y="296">carriedForward?</text>
+      <text class="tm" x="640" y="312">citationVerified?: bool</text>
+      <text class="tm" x="640" y="328">audit: string[]</text>
+      <!-- DocumentDates -->
+      <rect class="bx" x="10" y="400" width="280" height="100" rx="3"/><rect class="bd" x="10" y="400" width="280" height="26" rx="3"/>
+      <text class="th mid" x="150" y="418">DocumentDates</text>
+      <text class="tm" x="20" y="442">adoption: DocumentDateEntry</text>
+      <text class="tm" x="20" y="458">effective: DocumentDateEntry</text>
+      <text class="tm" x="20" y="474">execution, freeze, termination</text>
+      <text class="tm" x="20" y="490">unlabelledDates?: string[]</text>
+      <!-- RateProvenanceEntry -->
+      <rect class="bx" x="330" y="380" width="260" height="100" rx="3"/><rect class="bd" x="330" y="380" width="260" height="26" rx="3"/>
+      <text class="th mid" x="460" y="398">RateProvenanceEntry</text>
+      <text class="tm" x="340" y="422">function: PPALSRATE | RATETIER</text>
+      <text class="tm" x="340" y="438">          | SPARR</text>
+      <text class="tm" x="340" y="454">inputs?, appliesTo?, note?</text>
+      <!-- NaBasis -->
+      <rect class="bx" x="630" y="410" width="280" height="100" rx="3"/><rect class="bd" x="630" y="410" width="280" height="26" rx="3"/>
+      <text class="th mid" x="770" y="428">NaBasis</text>
+      <text class="tm" x="640" y="452">kind: explicit | documentSearch</text>
+      <text class="tm" x="640" y="468">text: string</text>
+      <text class="tm" x="640" y="484">section?: string</text>
+      <text class="tm" x="640" y="500">documentTypeEstablished: bool</text>
+
+      <!-- relations: composition (diamond at owner) -->
+      <polygon class="dia" points="330,76 338,70 346,76 338,82"/>
+      <polyline class="ln" points="330,76 150,76 150,190"/>
+      <text class="ts" x="160" y="68">documentColumns  1..*</text>
+      <polygon class="dia" points="590,76 582,70 574,76 582,82"/>
+      <polyline class="ln" points="590,76 770,76 770,190"/>
+      <text class="ts" x="602" y="68">provisions  61 fields</text>
+      <text class="ts" x="780" y="106">one answer per</text><text class="ts" x="780" y="120">document column</text>
+      <polygon class="dia" points="460,142 466,150 460,158 454,150"/>
+      <line class="ln" x1="460" y1="158" x2="460" y2="190"/>
+      <text class="ts" x="470" y="176">coverPage  1</text>
+      <polygon class="dia" points="150,340 156,348 150,356 144,348"/>
+      <line class="ln" x1="150" y1="356" x2="150" y2="400"/>
+      <text class="ts" x="160" y="382">dates  0..1</text>
+      <polygon class="dia" points="460,310 466,318 460,326 454,318"/>
+      <line class="ln" x1="460" y1="326" x2="460" y2="380"/>
+      <text class="ts" x="470" y="358">rateProvenance  0..3</text>
+      <polygon class="dia" points="770,350 776,358 770,366 764,358"/>
+      <line class="ln" x1="770" y1="366" x2="770" y2="410"/>
+      <text class="ts" x="780" y="392">naBasis  0..1</text>
+    </svg></div>
+    <figcaption><b>Figure 3.</b> UML class diagram of the main types. A filled diamond marks the owner. A <code>ProvisionAnswer</code> is the unit of review.</figcaption>
+  </figure>
+  <h3>Rules in the types</h3>
+  <ul>
+    <li>An unknown date is <code>null</code>. The code never makes up a date.</li>
+    <li>An N/A needs a documented basis. Silence in an amendment is never N/A.</li>
+    <li>A document-search N/A needs <code>readComplete: true</code> on the source document.</li>
+    <li>A PDF page is trusted only when the page tree verified it.</li>
+    <li>The case number is exactly 8 digits. It is text, so leading zeros stay.</li>
+  </ul>
+</section>
+
+<section id="scrape">
+  <h2>7. Scrape</h2>
+  <p>The Scrape step runs <code>runScraper()</code> in the HTML. The function calls the pipeline in a fixed order. No step uses a network or a language model.</p>
+  <figure>
+    <div class="frame"><svg viewBox="0 0 940 500" role="img" aria-label="Sequence diagram of runScraper: ordering, per-document identification, reconciliation, citation verification, then the review state.">
+      <defs><marker id="f4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+      <!-- lifelines -->
+      <g>
+        <rect class="bx" x="10" y="10" width="130" height="36" rx="3"/><text class="th mid" x="75" y="33">Reviewer</text>
+        <rect class="bx hl" x="165" y="10" width="130" height="36" rx="3"/><text class="th mid" x="230" y="33">runScraper</text>
+        <rect class="bx" x="320" y="10" width="130" height="36" rx="3"/><text class="th mid" x="385" y="33">resolveOrdering</text>
+        <rect class="bx" x="475" y="10" width="130" height="36" rx="3"/><text class="th mid" x="540" y="33">identifyProvisions</text>
+        <rect class="bx" x="630" y="10" width="130" height="36" rx="3"/><text class="th mid" x="695" y="33" style="font-size:11.5px">reconcileAllProvisions</text>
+        <rect class="bx" x="785" y="10" width="130" height="36" rx="3"/><text class="th mid" x="850" y="33">verifyCitations</text>
+      </g>
+      <g class="ln d" style="stroke:var(--line)">
+        <line x1="75" y1="46" x2="75" y2="490"/><line x1="230" y1="46" x2="230" y2="490"/><line x1="385" y1="46" x2="385" y2="490"/>
+        <line x1="540" y1="46" x2="540" y2="490"/><line x1="695" y1="46" x2="695" y2="490"/><line x1="850" y1="46" x2="850" y2="490"/>
+      </g>
+      <!-- messages -->
+      <line class="ln" x1="75" y1="90" x2="228" y2="90" marker-end="url(#f4)"/><text class="ts mid" x="152" y="82">press Scrape</text>
+      <line class="ln" x1="230" y1="130" x2="383" y2="130" marker-end="url(#f4)"/><text class="ts mid" x="307" y="122">plan columns</text>
+      <line class="ln d" x1="385" y1="168" x2="232" y2="168" marker-end="url(#f4)"/><text class="ts mid" x="307" y="160">ordered, needsConfirmation</text>
+      <rect class="bx wn" x="245" y="182" width="400" height="26" rx="3"/>
+      <text class="ts" x="255" y="199">If the order needs confirmation: stop, show reasons.</text>
+      <line class="ln" x1="230" y1="250" x2="538" y2="250" marker-end="url(#f4)"/><text class="ts mid" x="384" y="242">for each document: text, kind, page metadata</text>
+      <line class="ln d" x1="540" y1="288" x2="232" y2="288" marker-end="url(#f4)"/><text class="ts mid" x="386" y="280">found.provisions (61 records)</text>
+      <line class="ln" x1="230" y1="330" x2="693" y2="330" marker-end="url(#f4)"/><text class="ts mid" x="462" y="322">records per document, columns, order</text>
+      <line class="ln d" x1="695" y1="368" x2="232" y2="368" marker-end="url(#f4)"/><text class="ts mid" x="463" y="360">provisions, conflicts, summary</text>
+      <line class="ln" x1="230" y1="410" x2="848" y2="410" marker-end="url(#f4)"/><text class="ts mid" x="539" y="402">records per document</text>
+      <line class="ln d" x1="850" y1="448" x2="232" y2="448" marker-end="url(#f4)"/><text class="ts mid" x="541" y="440">citation issues (reported, never fixed by guess)</text>
+      <rect class="bx hl" x="10" y="462" width="440" height="28" rx="3"/>
+      <text class="tx" x="20" y="481">loadData(skeleton) → step = Review</text>
+    </svg></div>
+    <figcaption><b>Figure 4.</b> Sequence of <code>runScraper()</code>. Dashed arrows are returns. Inside <code>identifyProvisions</code>, <code>scrapePlanText</code> reads the sentences.</figcaption>
+  </figure>
+  <h3>What the scraper does</h3>
+  <ol class="steps">
+    <li><code>extract.js</code> reads text. It reads .docx as a ZIP and .pdf with a minimal extractor. It has no OCR.</li>
+    <li><code>scrape.js</code> splits the text into sentences. Each sentence keeps its plan section.</li>
+    <li>Regular expressions and <code>compromise.js</code> patterns propose one STE 100 value per item.</li>
+    <li>No match gives <code>missing</code>. Two conflicting values give <code>ambiguous</code>. An explicit "no such provision" sentence gives <code>notApplicable</code>.</li>
+    <li>Each present value gets a citation code and an audit entry.</li>
+  </ol>
+  <h3>How the app orders documents</h3>
+  <p><code>ordering.js</code> applies the plan-summary rules. D1 is the oldest full plan document in effect at least five years before the earlier of BPD and DOPT. Later columns are amendments with significant changes. Minor amendments go in footnotes. The function never sorts silently. If a date is unknown, it asks for confirmation.</p>
+  <div class="note"><b>Note</b>An uncertain amendment keeps a column. It blocks final until the reviewer confirms it.</div>
+</section>
+
+<section id="reconcile">
+  <h2>8. Reconcile across documents</h2>
+  <p><code>reconcileProvision</code> compares one provision across the document columns, oldest first. It assigns a lifecycle to each answer. An amendment that is silent carries the earlier rule forward.</p>
+  <h3>Example</h3>
+  <p>The values below are fictional. They show the rules.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Document</th><th>Text says</th><th>Status</th><th>Lifecycle</th></tr></thead>
+    <tbody>
+      <tr><td>D1 plan</td><td>Accrual factor 1.5%</td><td><code>present</code></td><td><code>superseded</code> (D2 replaced it)</td></tr>
+      <tr><td>D2 amendment</td><td>Accrual factor 2.0%</td><td><code>present</code></td><td><code>amended</code></td></tr>
+      <tr><td>D3 amendment</td><td>Silent</td><td><code>present</code> (carried)</td><td><code>unchanged</code>, <code>carriedForward</code> from D2</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>The first document that states a rule sets the governing rule.</li>
+    <li>A later document with a different rule is <code>amended</code>. The earlier answers become <code>superseded</code>.</li>
+    <li>A document that was not read never carries a rule into its column.</li>
+    <li>An <code>ambiguous</code> answer never changes the governing rule.</li>
+  </ul>
+  <p>In the generated .docx, a cell that repeats the previous document shows <code>same</code> plus its own citation. The first column of each block always shows the full value.</p>
+</section>
+
+<section id="review">
+  <h2>9. Review and the final gate</h2>
+  <p>Each pair has a review decision. An edit resets the pair to <code>pending</code>. "Approve all" is safe: it skips missing, ambiguous and incomplete pairs. It records whether an approval was <code>bulk</code> or <code>explicit</code>.</p>
+  <figure>
+    <div class="frame"><svg viewBox="0 0 900 250" role="img" aria-label="Two state diagrams. Document status moves from draft to final when the gate passes and returns to draft on any edit. Review decision moves from pending to approved or rejected, and an edit returns it to pending.">
+      <defs><marker id="f5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker></defs>
+      <text class="th" x="40" y="22">documentStatus</text>
+      <text class="th" x="500" y="14">ReviewDecision (per field and document)</text>
+
+      <circle class="dot" cx="22" cy="125" r="4"/><line class="ln" x1="26" y1="125" x2="38" y2="125" marker-end="url(#f5)"/>
+      <rect class="bx" x="40" y="100" width="120" height="50" rx="14"/><text class="th mid" x="100" y="130">draft</text>
+      <rect class="bx hl" x="320" y="100" width="120" height="50" rx="14"/><text class="th mid" x="380" y="130">final</text>
+      <path class="ln" d="M160 112 Q240 66 320 112" marker-end="url(#f5)"/><text class="ts mid" x="240" y="72">publishFinal: gate passes</text>
+      <path class="ln d" d="M320 138 Q240 184 160 138" marker-end="url(#f5)"/><text class="ts mid" x="240" y="196">any edit reopens to draft</text>
+
+      <circle class="dot" cx="482" cy="125" r="4"/><line class="ln" x1="486" y1="125" x2="498" y2="125" marker-end="url(#f5)"/>
+      <rect class="bx" x="500" y="100" width="110" height="50" rx="14"/><text class="th mid" x="555" y="130">pending</text>
+      <rect class="bx hl" x="740" y="30" width="130" height="50" rx="14"/><text class="th mid" x="805" y="60">approved</text>
+      <rect class="bx wn" x="740" y="170" width="130" height="50" rx="14"/><text class="th mid" x="805" y="200">rejected</text>
+      <line class="ln" x1="610" y1="110" x2="738" y2="55" marker-end="url(#f5)"/><text class="ts mid" x="655" y="72">approve</text>
+      <line class="ln d" x1="740" y1="68" x2="612" y2="124" marker-end="url(#f5)"/><text class="ts mid" x="660" y="122">edit resets</text>
+      <line class="ln" x1="610" y1="140" x2="738" y2="192" marker-end="url(#f5)"/><text class="ts mid" x="665" y="186">reject</text>
+    </svg></div>
+    <figcaption><b>Figure 5.</b> Two small state machines. An edit to an answer resets its pair to pending and reopens a final document to draft.</figcaption>
+  </figure>
+  <h3>What blocks final</h3>
+  <p><code>finalBlockers()</code> in <code>generate.ts</code> lists every block. The HTML carries the same gate.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Check</th><th>Blocks when</th></tr></thead>
+    <tbody>
+      <tr><td class="mn">Header</td><td>Plan name, case number or DOPT is missing. The case number is not 8 digits.</td></tr>
+      <tr><td class="mn">Each pair</td><td>The pair is not approved. A missing or ambiguous pair has no explicit approval. A citation is incomplete.</td></tr>
+      <tr><td class="mn">N/A</td><td>No documented basis. Or the source document is not confirmed read in full.</td></tr>
+      <tr><td class="mn">Dates</td><td>A date has a conflict. Or its meaning is not confirmed.</td></tr>
+      <tr><td class="mn">Amendments</td><td>The materiality of an amendment is uncertain.</td></tr>
+      <tr><td class="mn">Rates</td><td>Imported rates are stale, or their inputs were not recorded.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="rates">
+  <h2>10. Header rates</h2>
+  <p>The app cannot calculate the PBGC rates. The functions <code>PPALSRATE</code>, <code>RATETIER</code> and <code>SPARR</code> run only in Excel with the ATPBGC add-in. The app does a round trip instead.</p>
+  <ol class="steps">
+    <li>The app downloads the rates workbook, pre-filled with DOPT, stability period, lookback, anniversary, NOIT and NOD.</li>
+    <li>The user opens it in Excel. The add-in calculates the Outputs. The user saves the file.</li>
+    <li>The user uploads the saved file to the app.</li>
+    <li>The app checks the file. It needs formulas, cached values and a lookup date on the first day of the month after DOPT.</li>
+    <li>The app accepts SPARR only when the TID Status reads OK.</li>
+    <li>The app fills the header rates and prints one provenance line per function.</li>
+  </ol>
+  <div class="caution"><b>Caution</b>A header edit that changes a rate input clears the imported rates. It also reopens a final to draft.</div>
+</section>
+
+<section id="map">
+  <h2>11. Repository map</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Path</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td><code>r5-generator.html</code></td><td>The office product. About 1.3 MB.</td></tr>
+      <tr><td><code>packages/module-0-repository</code></td><td>Module 0. A deterministic stub that classifies a document by name and text.</td></tr>
+      <tr><td><code>packages/module-1-r5/src</code></td><td>The R5 logic. Plain-JS modules go into the HTML. TypeScript files and tests are the reference.</td></tr>
+      <tr><td><code>apps/r5-gui</code></td><td>Vite, React and Storybook reference app. Not for the office.</td></tr>
+      <tr><td><code>schema/r5.schema.json</code></td><td>JSON Schema for <code>R5Json</code>.</td></tr>
+      <tr><td><code>prompts</code></td><td>The scraper prompt and the missing-items prompt, for use with Copilot.</td></tr>
+      <tr><td><code>vendor</code></td><td>compromise.js, the shell .docx and the rates .xlsx (the last two as base64).</td></tr>
+      <tr><td><code>scripts</code></td><td>The build script and the <code>verify_*</code> harnesses.</td></tr>
+      <tr><td><code>tests/fixtures</code></td><td>26 fictional plan texts, each with an expected JSON.</td></tr>
+      <tr><td><code>docs</code></td><td>Design notes, audits, release notes, STE 100 rules, rates provenance.</td></tr>
+      <tr><td><code>OPEN_ITEMS.md</code></td><td>Known gaps. The repository records them. It does not guess.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="checks">
+  <h2>12. Checks</h2>
+  <p>Two layers test the work. The README reports the results for version 0.11.3. I did not run them for this guide.</p>
+  <ul>
+    <li><b>Unit tests.</b> <code>npm test</code> runs the vitest suites in the workspaces. The README reports 613 passing tests.</li>
+    <li><b>Harnesses.</b> The <code>scripts/verify_*</code> files run the HTML's own inlined code in Node or Python. They check extraction, the actuarial fixtures, the end-to-end flow, the .docx output and the review gate.</li>
+    <li><b>Office test.</b> The 15-step checklist in <code>docs/OFFICE_CHECKLIST.md</code> covers the Edge <code>file://</code> load and the .docx in Word.</li>
+  </ul>
+</section>
+
+<section id="limits">
+  <h2>13. Limits</h2>
+  <ul>
+    <li>The app has no OCR. A scanned image-only PDF returns almost no text. OCR it first, or paste the text.</li>
+    <li>The app does not calculate the rates. Excel with the add-in does.</li>
+    <li>The README marks 0.11.3 as an office acceptance candidate. Office verification is still open.</li>
+    <li><code>apps/r5-gui</code> no longer type-checks against the current schema.</li>
+    <li>Nine fields have no sourced R1 placement in the contribution export.</li>
+  </ul>
+  <div class="warning"><b>Warning</b>Do not upload real PBGC documents to an unrestricted external language model.</div>
+</section>
+
+<section id="reading">
+  <h2>14. Reading order</h2>
+  <p>Use this order to learn the code.</p>
+  <ol class="steps">
+    <li>Read <code>README.md</code> from the top to "What it does".</li>
+    <li>Read <code>docs/STE100_STYLE.md</code>. It shows the value and citation style.</li>
+    <li>Read <code>types.ts</code>. It defines every shape.</li>
+    <li>Read <code>pipeline.js</code>, then <code>reconcileProvision</code> in <code>review.ts</code>.</li>
+    <li>Read <code>finalBlockers</code> in <code>generate.ts</code>.</li>
+    <li>Read <code>docs/TEMPLATE_FILL.md</code> and <code>templateFill.js</code>.</li>
+    <li>Read <code>runScraper</code> in <code>r5-generator.html</code>.</li>
+    <li>Read <code>scripts/build_single_file.py</code>.</li>
+  </ol>
+</section>
+</main>

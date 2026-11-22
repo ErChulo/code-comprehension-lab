@@ -1,14 +1,15 @@
 {
-  "name": "deckkit",
+  "name": "code-comprehension-lab-deckkit",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "type": "module",
+  "description": "Builds generator.html (single file, runs from file://) and the optional command-line deck builder.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:generator": "node build-generator.mjs",
+    "deck": "node make-deck.mjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "reveal.js": "^5.1.0"
+    "mermaid": "11.4.1",
+    "reveal.js": "5.1.0"
   }
 }
