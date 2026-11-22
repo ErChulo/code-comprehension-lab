@@ -1,0 +1,32 @@
+%% title: One run through the five steps
+%% caption: Step order is a simplification (INFERENCE).
+sequenceDiagram
+autonumber
+actor U as Reviewer
+participant UI as Browser UI (r5-generator.html)
+participant EX as R5Extract.extractFile
+participant PL as runScraper / pipeline.js
+participant RV as review.ts
+participant GN as generate.ts
+U->>UI: Step 1: add plan documents
+UI->>EX: extract text and page metadata
+EX-->>UI: text + PdfPageMetadata
+U->>UI: Step 2: run scraper
+UI->>PL: runScraper(documents)
+PL-->>UI: PerDocumentExtraction[] per field
+UI->>RV: reconcileProvision(field, extractions)
+RV-->>UI: ProvisionAnswer[] (one per document)
+U->>UI: Step 3: review, edit, approve
+UI->>RV: applyAnswerEdit / approvePairExplicitly
+Note over RV: any edit resets approval and reopens draft
+U->>UI: Step 4: generate
+UI->>GN: publishFinal(data, decisions)
+GN->>GN: finalBlockers(...)
+alt no blockers
+  GN-->>UI: ok, data.documentStatus = final
+  UI->>GN: buildR5Document(data)
+  GN-->>UI: .docx
+else blockers
+  GN-->>UI: ok=false + blocker list
+end
+U->>UI: Step 5: download

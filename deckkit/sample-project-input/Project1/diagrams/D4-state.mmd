@@ -1,0 +1,11 @@
+%% decision: D4
+%% title: Document status
+%% caption: Only publishFinal sets final. Any edit reopens draft.
+stateDiagram-v2
+direction LR
+[*] --> draft
+draft --> draft : edit / approve
+draft --> final : publishFinal, gate passes
+draft --> draft : publishFinal, gate blocks
+final --> draft : any edit (reopenDraft)
+final --> [*] : download .docx

@@ -1,0 +1,8 @@
+stateDiagram-v2
+direction LR
+[*] --> missing : unusable, unread, ambiguous, or nothing governs
+[*] --> unchanged : first stated, same rule, or carried forward
+[*] --> amended : different rule, or provision added
+[*] --> notApplicable : affirmative absence evidence
+unchanged --> superseded : a later document amends
+notApplicable --> superseded : a later document amends

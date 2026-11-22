@@ -1,0 +1,5 @@
+flowchart LR
+S["Spec inputs<br/>(D1, D2, D3 texts)"] -->|"LLM code:<br/>reconcileProvision"| O["Code output<br/>(lifecycles + values)"]
+S -->|"you, by hand:<br/>apply the rules"| H["Hand answer"]
+O -->|"compare"| Q{{"equal?"}}
+H -->|"compare"| Q

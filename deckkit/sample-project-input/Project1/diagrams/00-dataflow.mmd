@@ -1,0 +1,8 @@
+%% title: Data flow, left to right
+%% build: true
+%% caption: Press space to build the flow.
+flowchart LR
+files[/Plan documents/] --> ext[extractFile<br/>text + page metadata]
+ext --> scr[runScraper<br/>pipeline.js]
+scr --> per[PerDocumentExtraction<br/>per field, per document]
+per --> rec[reconcileProvision<br/>review.ts]

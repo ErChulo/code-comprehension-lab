@@ -1,0 +1,8 @@
+flowchart LR
+pa[ProvisionAnswers<br/>lifecycle + carriedForward] --> rev[review and approve<br/>applyAnswerEdit]
+rev --> rj[(R5Json)]
+rates[/Rates from Excel add-in/] --> rj
+rj --> gate{finalBlockers<br/>empty?}
+gate -->|no| rev
+gate -->|yes| final[publishFinal<br/>status = final]
+final --> doc[buildR5Document<br/>.docx]

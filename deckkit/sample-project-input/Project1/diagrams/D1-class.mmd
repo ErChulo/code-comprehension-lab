@@ -1,0 +1,46 @@
+%% decision: D1
+%% title: Data model
+%% caption: One ProvisionAnswer per provision per document.
+classDiagram
+direction LR
+class R5Json {
+  documentStatus: draft | final
+  planMetadata
+  coverPage
+  documentColumns: DocumentColumn[]
+  provisions: Record~field, ProvisionAnswer[]~
+}
+class DocumentColumn {
+  documentName
+  documentType
+  effectiveDate: string|null
+  adoptionDate: string|null
+  phaseInPercent: number|null
+}
+class ProvisionAnswer {
+  status: present|notApplicable|missing|ambiguous
+  value
+  lifecycle: unchanged|amended|superseded|missing|notApplicable
+  citationVerified: boolean
+}
+class Citation {
+  document
+  page
+  section
+  text
+  effectiveDate
+}
+class CarriedForward {
+  fromDocumentIndex
+  fromDocument
+  value
+}
+class NaBasis {
+  kind: explicit | documentSearch
+  text
+}
+R5Json "1" *-- "1..*" DocumentColumn : documentColumns
+R5Json "1" *-- "61 fields" ProvisionAnswer : provisions[field][docIndex]
+ProvisionAnswer o-- "0..1" Citation
+ProvisionAnswer o-- "0..1" CarriedForward
+ProvisionAnswer o-- "0..1" NaBasis

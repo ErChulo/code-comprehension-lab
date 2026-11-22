@@ -1,0 +1,12 @@
+flowchart LR
+subgraph D1["answer for D1"]
+a1["status: present<br/>value: 1.5%<br/>lifecycle: superseded<br/>(was unchanged)"]
+end
+subgraph D2["answer for D2"]
+a2["status: present<br/>value: 2.0%<br/>lifecycle: amended"]
+end
+subgraph D3["answer for D3"]
+a3["status: present<br/>value: 2.0%<br/>lifecycle: unchanged<br/>carriedForward.fromDocument: D2"]
+end
+a1 -. "D2 replaced it" .-> a2
+a2 -. "D3 silent: carry forward" .-> a3

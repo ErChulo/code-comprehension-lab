@@ -1,0 +1,9 @@
+flowchart TD
+B{Document status} -->|missing = silent| S1{What governs?}
+B -->|notApplicable| N1{Read AND affirmative evidence?}
+B -->|ambiguous| AM[missing<br/>needs explicit review]
+N1 -->|yes| NA[notApplicable<br/>earlier rule superseded]
+N1 -->|no| S1
+S1 -->|a rule| SC[carry value forward<br/>present, unchanged<br/>carriedForward trace]
+S1 -->|N/A| SN[carry N/A forward<br/>keep naBasis]
+S1 -->|nothing| SM[missing]

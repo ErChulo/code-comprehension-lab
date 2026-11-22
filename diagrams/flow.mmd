@@ -1,0 +1,17 @@
+flowchart TD
+A([Next document, in order D1, D2, ...]) --> B{Extraction status}
+B -->|present| P1{Usable comparison key?}
+P1 -->|no| M[lifecycle: missing<br/>never guess]
+P1 -->|yes| P2{Which rule governs now?}
+P2 -->|"'no such provision'"| PA[lifecycle: amended<br/>provision added<br/>earlier N/A superseded]
+P2 -->|none yet| PU[lifecycle: unchanged<br/>this becomes governing]
+P2 -->|a rule, same key| PU2[lifecycle: unchanged]
+P2 -->|a rule, different key| PM[lifecycle: amended<br/>earlier unchanged superseded<br/>this becomes governing]
+B -->|missing = silent| S1{Governing rule or N/A?}
+S1 -->|rule| SC[Carry value forward<br/>status present, unchanged<br/>carriedForward trace]
+S1 -->|N/A| SN[Carry N/A forward<br/>keep naBasis]
+S1 -->|nothing| SM[lifecycle: missing]
+B -->|notApplicable| N1{Document read AND<br/>affirmative evidence?}
+N1 -->|yes| NA[lifecycle: notApplicable<br/>earlier rule superseded]
+N1 -->|no| S1
+B -->|ambiguous| AM[lifecycle: missing<br/>needs explicit review]

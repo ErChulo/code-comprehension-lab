@@ -1,0 +1,5 @@
+flowchart LR
+files[/Plan documents/] --> ext[extractFile<br/>text + page metadata]
+ext --> scr[runScraper<br/>pipeline.js]
+scr --> per[PerDocumentExtraction<br/>per field, per document]
+per --> rec[reconcileProvision<br/>review.ts]

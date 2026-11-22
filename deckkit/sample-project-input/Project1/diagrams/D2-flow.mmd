@@ -1,0 +1,12 @@
+%% decision: D2
+%% title: reconcileProvision, document status = present
+%% build: true
+%% caption: Press space to build the diagram.
+flowchart TD
+A([Document status = present]) --> P1{Usable comparison key?}
+P1 -->|no| M[lifecycle: missing<br/>never guess]
+P1 -->|yes| P2{Which rule governs now?}
+P2 -->|none yet| PU[unchanged<br/>becomes governing]
+P2 -->|same key| PU2[unchanged]
+P2 -->|different key| PM[amended<br/>earlier unchanged superseded<br/>becomes governing]
+P2 -->|'no such provision'| PA[amended<br/>provision added<br/>earlier N/A superseded]
